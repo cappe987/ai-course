@@ -9,12 +9,6 @@ function res = Test(algorithm)
     absdist = textscan(fid2, "%s %d");
     fclose(fid2);
     
-    % Map id to absolute dist. Used in heuristic function
-    % Id is determined by the order in the absolute distance list
-%     distmap = containers.Map(1:length(absdist{1}), absdist{2}); 
-    
-    % distmap = containers.Map(cities, absdist{2}); % Hashmap for faster lookup
-    
     % Create adjacency matrix    
     len = length(absdist{1});
     adjmat = zeros(len, len);
@@ -28,15 +22,7 @@ function res = Test(algorithm)
         adjmat(fromIndex, toIndex) = dist;
         adjmat(toIndex, fromIndex) = dist;
     end
-
     
-%     q = PriorityQueue(2); % Use [id heuristic (dist for A*)]
-    
-%     distmap = containers.Map(1:length(cities), absdist{2}); % Map id to dist.
-
-    % Use `graph()` or `digraph` to build the tree.
-    % sortrows(A,2) % to choose traversal order.
-    
-    res = cities;
+    res = adjmat;
 end
 

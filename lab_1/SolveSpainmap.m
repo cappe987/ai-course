@@ -1,30 +1,32 @@
 
-gbfs = Solve('gbfs')
+gbfs  = Solve('gbfs')
 Astar = Solve('astar')
 
 
 function res = Solve(algo)
+%     mapfile = "Romania_map.txt";
+%     sdlfile = "Romania_straight_lines.txt";
+%     StartCity = "Arad";
+%     EndCity = "Bucharest"; 
+    mapfile = "spain_map.txt";
+    sdlfile = "spain_map_straight_lines.txt";
+    StartCity = "Malaga";
+    EndCity = "Valladolid";
+    
     import containers.Map;
-    fid = fopen("spain_map.txt", "r");
-%     fid = fopen("Romania_map.txt", "r");
+    fid = fopen(mapfile, "r");
     data = textscan(fid, "%s %s %d");
     fclose(fid);
     
-    fid2 = fopen("spain_map_straight_lines.txt", "r");
-%     fid2 = fopen("Romania_straight_lines.txt", "r");
+    fid2 = fopen(sdlfile, "r");
     sld = textscan(fid2, "%s %d"); % SLD = Straight Line Distance
     fclose(fid2);
 
-    cityCount = 0;
-    len = length(sld{1});
-%     cities = City.empty(0, len); % Preallocate memory for all cities.
     citymap = containers.Map(); % Name -> City object
     
     % Create cities
-    for i = 1:len
-        cityCount = cityCount + 1;
+    for i = 1:length(sld{1})
         city = City(sld{1}{i}, sld{2}(i));
-%         cities(cityCount) = city;
         citymap(city.Name) = city;
     end
     
@@ -39,12 +41,8 @@ function res = Solve(algo)
         toC.addNeighbour(fromC, dist);
     end
     
-%     StartCity = "Arad";
-%     EndCity = "Bucharest"; 
-    StartCity = "Malaga";
-    EndCity = "Valladolid";
-    start = citymap(StartCity);
-    
+
+    start = citymap(StartCity);    
     % Run algorithm
     if strcmp(algo, 'astar')
         res = astar(start, StartCity, EndCity);
