@@ -1,9 +1,24 @@
 
-gbfs  = Solve('gbfs')
-Astar = Solve('astar')
+[gbfsDist, gbfsPath]  = Solve('gbfs')
+[astarDist, astarPath] = Solve('astar')
 
+% Only difference between A* and Greedy BFS is that A* also includes the
+% distance traveled in the heuristic. Otherwise the code is exactly the
+% same.
 
-function res = Solve(algo)
+% A*
+% Time complexity: O(b^d)
+% Space complexity: O(b^d)
+% where `b` is the branching factor and `d` is the depth of the shortest
+% path.
+
+% Greedy BFS
+% Time complexity: O(b^m)
+% Space complexity: O(b^m)
+% where `b` is the branching factor and `m` is the maximum depth of the
+% search space.
+
+function [distance, path] = Solve(algo)
 %     mapfile = "Romania_map.txt";
 %     sdlfile = "Romania_straight_lines.txt";
 %     StartCity = "Arad";
@@ -41,21 +56,8 @@ function res = Solve(algo)
         toC.addNeighbour(fromC, dist);
     end
     
-
-    start = citymap(StartCity);    
     % Run algorithm
-    if strcmp(algo, 'astar')
-        res = astar(start, StartCity, EndCity);
-    elseif strcmp(algo, 'gbfs')
-        res = greedybfs(start, StartCity, EndCity);
-    end
-end
-
-% Time complexity: O(b^d)
-% Space complexity: O(b^d)
-% where `b` is the branching factor and `d` is the depth of the shortest
-% path.
-function res = astar(start, StartCity, EndCity)
+    start = citymap(StartCity);    
     q = PriorityQueue(1); % Sorts based on the first index
     %      [heuristic dist-traveled city city-path]
     curr = [start.SLD 0 {start} {[StartCity]}]; 
@@ -64,61 +66,27 @@ function res = astar(start, StartCity, EndCity)
     while q.size() > 0
         curr = q.remove();
         city = curr{3};
-        traveled = curr{2};
-%         disp(city.Name);
         if city.Name == EndCity
-            res = curr;
+            distance = curr{2};
+            path = curr{4};
             return;
         end
         
         for i = 1:city.NeighbourCount
-            
-            dist = city.Neighbours(i).Length;
             ncity = city.Neighbours(i).City;
-            travelednext = traveled + dist; % g(n);
-            heuristic = travelednext + ncity.SLD; % f(n) = g(n) + h(n)
             visited = curr{4}; % visited keeps track of the path traveled.
             visited(length(visited) + 1) = ncity.Name; 
-            item = [heuristic travelednext {ncity} {visited}];
+            traveled = curr{2} + city.Neighbours(i).Length;
+            
+            % Choose heuristic function depending on algorithm
+            if strcmp(algo, 'gbfs')
+                heuristic = ncity.SLD;
+            elseif strcmp(algo, 'astar')
+                heuristic = traveled + ncity.SLD;
+            end
+            
+            item = [heuristic traveled {ncity} {visited}];
             q.insert(item);
         end     
-    end
-end
-
-% Only difference between A* and Greedy BFS is that A* also includes the
-% distance traveled in the heuristic. Otherwise the code is exactly the
-% same.
-
-% Time complexity: O(b^m)
-% Space complexity: O(b^m)
-% where `b` is the branching factor and `m` is the maximum depth of the
-% search space.
-function res = greedybfs(start, StartCity, EndCity)
-    q = PriorityQueue(1); % Sorts based on the first index
-    %      [heuristic dist-traveled city city-path]
-    curr = [start.SLD 0 {start} {[StartCity]}];
-%     disp(curr);
-    q.insert(curr);
-    
-    while q.size() > 0
-        curr = q.remove();
-        city = curr{3};
-        traveled = curr{2};
-%         disp(city.Name);
-        if city.Name == EndCity
-            res = curr;
-            return;
-        end
-        
-        for i = 1:city.NeighbourCount
-            
-            dist = city.Neighbours(i).Length;
-            ncity = city.Neighbours(i).City;
-            travelednext = traveled + dist; 
-            visited = curr{4}; % visited keeps track of the path traveled.
-            visited(length(visited) + 1) = ncity.Name; 
-            item = [ncity.SLD travelednext {ncity} {visited}];
-            q.insert(item);
-        end
     end
 end
