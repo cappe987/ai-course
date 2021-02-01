@@ -29,7 +29,7 @@ if strcmp(algo, 'dfs')
     % Arrays are only saved in the leaves.
     while s.size > 0
         node = s.pop();
-        
+
         if isempty(node.Array) % isempty indicates it's not a leaf.
             s.push(node.Right);
             s.push(node.Left);
@@ -39,10 +39,12 @@ if strcmp(algo, 'dfs')
         [value, weight] = calculateValueWeight(node.Array, bw);
         if  weight <= maxWeight && value > maxVal
             maxVal = value;
+            maxArr = node.Array;
+%             disp(weight);
         end
     end
     
-    res = maxVal;
+    res = maxArr;
     
 elseif strcmp(algo, 'bfs')
     q = CQueue(); % q.push = enqueue | q.pop = dequeue
@@ -61,10 +63,11 @@ elseif strcmp(algo, 'bfs')
         [value, weight] = calculateValueWeight(node.Array, bw);
         if  weight <= maxWeight && value > maxVal
             maxVal = value;
+            maxArr = node.Array;
         end
     end
     
-    res = maxVal;    
+    res = maxArr;    
 end
 end
     
