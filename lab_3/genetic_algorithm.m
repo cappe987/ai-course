@@ -24,7 +24,7 @@ res = Run();
 fitness(res{1})
 toc
 
-temp = res;
+% temp = res;
 
 % new = cell(50,2);
 
@@ -33,17 +33,6 @@ temp = res;
 %     new(i,2) = {fitness(temp{i})};
 % end
 % sorted = sortrows(new, 2);
-
-
-% euclid(res(1), res(2))
-
-% fitness(res{1})
-
-% a = res{1}
-% b = res{2}
-
-% crossover(a, b, 2, 3, 52)
-
 
 function res = generation(population, PS, genlimit, nodecount)
     if genlimit == 0
@@ -125,17 +114,29 @@ end
 
 function child = crossover(p1, p2, from, to, nodecount)
     child = Node.empty(0,nodecount);  
+    taken = p1(from:to);
+    [~, ia] = setdiff([p2.ID], [taken.ID], 'stable');
+    p2noP1 = p2(ia);
+    
+    child(1:from-1) = p2noP1(1:from-1);
+    child(from:to) = taken; 
+    if to ~= nodecount
+        child(to+1:nodecount) = p2noP1(from:end);
+    end
+end
+
+function child = crossover2(p1, p2, from, to, nodecount)
+    % Old crossover method. New version is a bit faster and much shorter.
+
+    child = Node.empty(0,nodecount);  
     taken = zeros(1, to-from+1);
     for i = from:to
         taken(i) = p1(i).ID;
     end
     p2idx = 1;
     i = 1;
-%     disp(p1);
-%     disp(p2);
     while i < from
        if ~ismember(p2(p2idx).ID, taken)
-%            disp("test");
            child(i) = p2(p2idx);
            p2idx = p2idx + 1;
            i = i + 1;
@@ -144,8 +145,6 @@ function child = crossover(p1, p2, from, to, nodecount)
        end
     end
     for i = from:to
-% %         disp(i);
-%         disp(p1(i));
         child(i) = p1(i);
     end
     
@@ -161,19 +160,13 @@ function child = crossover(p1, p2, from, to, nodecount)
     end
 end
 
-function value = fitness(individual)
+function value = fitness(indv)
     value = 0;
-    for i = 1:length(individual)-1
-        value = value + euclid(individual(i), individual(i+1));
+    for i = 1:length(indv)-1
+        % Not using a function for the euclid calculations took off ~30s.
+        value = value + sqrt((indv(i+1).X - indv(i).X)^2 + (indv(i+1).Y - indv(i).Y)^2);
     end
 end
-
-
-function dist = euclid(n1, n2)
-    dist = sqrt((n2.X - n1.X)^2 + (n2.Y - n1.Y)^2);
-end
-
-
 
 function res = Run()
     nodecount = 52;
@@ -188,22 +181,13 @@ function res = Run()
     
     
     PS = 50;
-    F  = 2;
-    CR = 1;
-    initial_population = cell(1,PS);
+    initial = cell(1,PS);
     
     for i = 1:PS
-       initial_population{i} = nodes(randperm(nodecount, nodecount));
+       initial{i} = nodes(randperm(nodecount, nodecount));
     end
     
-%     initial_population = nodes(randperm(52,52)); % Random permutation
-
-%     for i = 1:PS
-%         disp(fitness(initial_population{i}));
-%     end
-    
-%     disp("Generation 2");
-    population = generation(initial_population, PS, 2000, nodecount);
+    population = generation(initial, PS, 2000, nodecount);
     res = population; % fitness(population{1});
 end
 
