@@ -1,6 +1,7 @@
+tic
 dfs = Solve('dfs')
 bfs = Solve('bfs')
-
+toc
 
 function res = Solve(algo)
 %SOLVEKNAPSACK Summary of this function goes here
