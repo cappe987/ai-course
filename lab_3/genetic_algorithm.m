@@ -26,13 +26,13 @@ toc
 
 temp = res;
 
-new = cell(50,2);
+% new = cell(50,2);
 
-for i = 1:50
-    new(i,1) = temp(i);
-    new(i,2) = {fitness(temp{i})};
-end
-sorted = sortrows(new, 2);
+% for i = 1:50
+%     new(i,1) = temp(i);
+%     new(i,2) = {fitness(temp{i})};
+% end
+% sorted = sortrows(new, 2);
 
 
 % euclid(res(1), res(2))
@@ -125,7 +125,10 @@ end
 
 function child = crossover(p1, p2, from, to, nodecount)
     child = Node.empty(0,nodecount);  
-    taken = arrayfun(@(x) (x.ID), p1(from:to));
+    taken = zeros(1, to-from+1);
+    for i = from:to
+        taken(i) = p1(i).ID;
+    end
     p2idx = 1;
     i = 1;
 %     disp(p1);
@@ -156,20 +159,6 @@ function child = crossover(p1, p2, from, to, nodecount)
            p2idx = p2idx + 1;
        end
     end
-%     for i = 1:(from-1)
-%         if ~ismember(p2(i).ID, taken)
-%             child(i) = p2(i);
-% %             p2idx = p2idx + 1;
-%         end
-%         if i >= from && i <= to
-%             child(i) = p1(i);
-%         else
-%             if ~ismember(p2(p2idx).ID, taken)
-%                 child(i) = p2(p2idx);
-%                 p2idx = p2idx + 1;
-%             end
-%         end
-%     end
 end
 
 function value = fitness(individual)
