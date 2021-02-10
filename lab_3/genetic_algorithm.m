@@ -33,11 +33,35 @@
 
 % createNodes(52)
 
-tic
-res = Run();
-fitness(res{1})
-toc
-plot([res{1}.X], [res{1}.Y], '-o');
+% tic
+% res = Run();
+% fitness(res{1})
+% toc
+% plot([res{1}.X], [res{1}.Y], '-o');
+
+% case1.RNG = 1;
+% case1.PS = 500;
+% case1.GEN = 500;
+% case1.CR = 0.8;
+% case1.MR = 0.01;
+% case1.k = 10;
+
+c.RNG = 1;
+c.PS = 1000;
+c.GEN = 200;
+c.CR = 0.8;
+c.MR = 0.01;
+c.k = 10;
+% cs = [case2 case3 case4 case5];
+cs = [case5];
+% function Run(Case, RNG, PS, GEN, CR, MR, k)
+
+% for i = 1:length(cs)
+%     c = cs(i);
+[pop, gens] = Run(1, c.RNG, c.PS, c.GEN, c.CR, c.MR, c.k);
+plot(gens);
+% end
+
 % temp = res;
 
 % new = cell(50,2);
@@ -48,9 +72,11 @@ plot([res{1}.X], [res{1}.Y], '-o');
 % end
 % sorted = sortrows(new, 2);
 
-function population = generation(population, PS, genlimit, CR, MR, k, nodecount)
+function [population, bestPerGen] = generation(population, PS, genlimit, CR, MR, k, nodecount)
 selectedcount = PS/k;
 selected = cell(1,selectedcount);
+gen = 1;
+bestPerGen = zeros(1,genlimit);
 while genlimit ~= 0
     
     % Tournament Selection
@@ -73,7 +99,8 @@ while genlimit ~= 0
             bestIndex = [bestIdx i];
         end
     end
-    
+    bestPerGen(gen) = best;
+    gen = gen + 1;
 %     if best < 9000
 %         res = population;
 %         return
@@ -107,12 +134,14 @@ while genlimit ~= 0
     
     % Mutation
     for i = 1:PS
-        if rand() < MR
-            i1 = randsample(nodecount-2, 1) + 1;
-            i2 = randsample(nodecount-2, 1) + 1;
-            temp = population{i}(i1);
-            population{i}(i1) = population{i}(i2);
-            population{i}(i2) = temp;
+        for j = 1:nodecount-1
+            if rand() < MR
+                i1 = randsample(nodecount-2, 1) + 1;
+                i2 = randsample(nodecount-2, 1) + 1;
+                temp = population{i}(i1);
+                population{i}(i1) = population{i}(i2);
+                population{i}(i2) = temp;
+            end
         end
     end
     
@@ -199,23 +228,12 @@ function nodes = createNodes(nodecount)
     end
 end
 
-function res = Run()
+function [population, gens] = Run(Case, RNG, PS, GEN, CR, MR, k)
     nodecount = 52;
     nodes = createNodes(nodecount);
     
-    RNG = 1;
+
     rng(RNG);
-    PS = 500;
-    GEN = 500;
-    CR = 0.8;
-    MR = 0.5;
-    k = 10;
-    disp(strcat("RNG: ", num2str(RNG)));
-    disp(strcat("PS: ", num2str(PS)));
-    disp(strcat("GEN: ", num2str(GEN)));
-    disp(strcat("CR: ", num2str(CR)));
-    disp(strcat("MR: ", num2str(MR)));
-    disp(strcat("k: ", num2str(k)));
     
     initial = cell(1,PS);
     
@@ -227,8 +245,18 @@ function res = Run()
         initial{i} = n;
     end
 %     res = initial;
-    population = generation(initial, PS, GEN, CR, MR, k, nodecount+1);
-    res = population; % fitness(population{1});
+    tic
+    [population, gens] = generation(initial, PS, GEN, CR, MR, k, nodecount+1);
+    disp(strcat("--- Case ", num2str(Case), " ---"));
+    disp(strcat("RNG: ", num2str(RNG)));
+    disp(strcat("PS: ", num2str(PS)));
+    disp(strcat("GEN: ", num2str(GEN)));
+    disp(strcat("CR: ", num2str(CR)));
+    disp(strcat("MR: ", num2str(MR)));
+    disp(strcat("k: ", num2str(k)));
+    disp(fitness(population{1}))
+    toc
+%     res = population; % fitness(population{1});
 %     for i = 1:nodecount+1
 %         disp(res{1,1}(1,i).ID);
 %     end
