@@ -16,14 +16,29 @@
 rng(1);
 
 
+% nodes = createNodes(52);
+% plot([nodes.X], [nodes.Y], '-o');
+% g = graph();
+% g = addnode(g, 52);
+% 
+% for i = 1:51
+%     g = addedge(g, i, i+1);
+% end
+% plot(g);
+% arr = zeros(2,52);
+% arr(1:52) = [nodes.X];
+% arr(53:104) = [nodes.Y]; 
+% scatter([nodes.X], [nodes.Y])
+% arr(1) = [nodes.X];
+% arr(2) = [nodes.Y];
 
-
+% createNodes(52)
 
 tic
 res = Run();
 fitness(res{1})
 toc
-
+% plot([res{1}.X], [res{1}.Y], '-o');
 % temp = res;
 
 % new = cell(50,2);
@@ -76,8 +91,8 @@ function res = generation(population, PS, genlimit, nodecount)
         p1 = selected{randsample(selectedcount, 1)};
         p2 = selected{randsample(selectedcount, 1)};
 
-        from = randsample(nodecount, 1);
-        to   = randsample(nodecount, 1);
+        from = randsample(nodecount-2, 1)+1;
+        to   = randsample(nodecount-2, 1)+1;
         if from > to
             temp = to;
             to = from;
@@ -94,8 +109,8 @@ function res = generation(population, PS, genlimit, nodecount)
     % Mutation
     for i = 1:PS
         if rand() < 0.3
-            i1 = randsample(nodecount, 1);
-            i2 = randsample(nodecount, 1);
+            i1 = randsample(nodecount-2, 1) + 1;
+            i2 = randsample(nodecount-2, 1) + 1;
             temp = new_population{i}(i1);
             new_population{i}(i1) = new_population{i}(i2);
             new_population{i}(i2) = temp;
@@ -114,15 +129,19 @@ end
 
 function child = crossover(p1, p2, from, to, nodecount)
     child = Node.empty(0,nodecount);  
+    child(1) = p1(1); % Set city 1 first
     taken = p1(from:to);
-    [~, ia] = setdiff([p2.ID], [taken.ID], 'stable');
+    [~, ia] = setdiff([p2.ID], [1 taken.ID], 'stable');
     p2noP1 = p2(ia);
     
-    child(1:from-1) = p2noP1(1:from-1);
+    child(2:from-1) = p2noP1(1:from-2);
     child(from:to) = taken; 
-    if to ~= nodecount
-        child(to+1:nodecount) = p2noP1(from:end);
-    end
+%     if to ~= nodecount
+    
+
+    child(to+1:nodecount-1) = p2noP1(from-1:end);
+%     end
+    child(nodecount) = p1(1); % Set city 1 last.
 end
 
 function child = crossover2(p1, p2, from, to, nodecount)
@@ -168,8 +187,7 @@ function value = fitness(indv)
     end
 end
 
-function res = Run()
-    nodecount = 52;
+function nodes = createNodes(nodecount)
     fid = fopen('berlin52.txt', 'r');
     
     format = '%d %f %f';
@@ -178,17 +196,28 @@ function res = Run()
     for i = 1:nodecount
         nodes(i) = Node(data(i,1), data(i,2), data(i,3));
     end
-    
+end
+
+function res = Run()
+    nodecount = 52;
+    nodes = createNodes(nodecount);
     
     PS = 50;
     initial = cell(1,PS);
     
     for i = 1:PS
-       initial{i} = nodes(randperm(nodecount, nodecount));
+        n = Node.empty(0,53);
+        n(1) = nodes(1);
+        n(2:nodecount) = nodes(randperm(nodecount-1, nodecount-1)+1);
+        n(nodecount+1) = nodes(1);
+        initial{i} = n;
     end
-    
-    population = generation(initial, PS, 2000, nodecount);
+%     res = initial;
+    population = generation(initial, PS, 4000, nodecount+1);
     res = population; % fitness(population{1});
+%     for i = 1:nodecount+1
+%         disp(res{1,1}(1,i).ID);
+%     end
 end
 
 
