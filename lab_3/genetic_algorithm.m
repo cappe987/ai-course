@@ -13,7 +13,6 @@
 %
 % Let E(X_i, X_j) be the euclidean distance between city i and j.
 % Minimize sum_{1}^{n-1}{E(X_i, X_{i+1)}
-rng(1);
 
 
 % nodes = createNodes(52);
@@ -38,7 +37,7 @@ tic
 res = Run();
 fitness(res{1})
 toc
-% plot([res{1}.X], [res{1}.Y], '-o');
+plot([res{1}.X], [res{1}.Y], '-o');
 % temp = res;
 
 % new = cell(50,2);
@@ -49,16 +48,14 @@ toc
 % end
 % sorted = sortrows(new, 2);
 
-function res = generation(population, PS, genlimit, CR, MR, k, nodecount)
-    if genlimit == 0
-        res = population;
-        return
-    end
+function population = generation(population, PS, genlimit, CR, MR, k, nodecount)
+selectedcount = PS/k;
+selected = cell(1,selectedcount);
+while genlimit ~= 0
     
     % Tournament Selection
     population = population(randperm(PS, PS)); % Randomize order.
-    selectedcount = PS/k;
-    selected = cell(1,selectedcount);
+
     best = Inf;
     partition = reshape(population, k, []); % Partition into groups
     for i = 1:PS/k
@@ -76,9 +73,14 @@ function res = generation(population, PS, genlimit, CR, MR, k, nodecount)
             bestIndex = [bestIdx i];
         end
     end
+    
+%     if best < 9000
+%         res = population;
+%         return
+%     end
         
     % Crossover
-    new_population = cell(1,PS);
+%     population = cell(1,PS);
     idx = 1;
     for i = 1:PS/2
         p1 = selected{randsample(selectedcount, 1)};
@@ -93,11 +95,11 @@ function res = generation(population, PS, genlimit, CR, MR, k, nodecount)
             end
             child1 = crossover(p1, p2, from, to, nodecount);
             child2 = crossover(p2, p1, from, to, nodecount);
-            new_population{idx} = child1;
-            new_population{idx + 1} = child2;
+            population{idx} = child1;
+            population{idx + 1} = child2;
         else
-            new_population{idx} = p1;
-            new_population{idx + 1} = p2;
+            population{idx} = p1;
+            population{idx + 1} = p2;
         end
         idx = idx + 2;
     end
@@ -108,19 +110,21 @@ function res = generation(population, PS, genlimit, CR, MR, k, nodecount)
         if rand() < MR
             i1 = randsample(nodecount-2, 1) + 1;
             i2 = randsample(nodecount-2, 1) + 1;
-            temp = new_population{i}(i1);
-            new_population{i}(i1) = new_population{i}(i2);
-            new_population{i}(i2) = temp;
+            temp = population{i}(i1);
+            population{i}(i1) = population{i}(i2);
+            population{i}(i2) = temp;
         end
     end
     
     
     % Replacement
     % Using best individual that we calculated earlier.
-    new_population{1} = partition{bestIndex(1), bestIndex(2)};
+    population{1} = partition{bestIndex(1), bestIndex(2)};
     
-    
-    res = generation(new_population, PS, genlimit - 1, CR, MR, k, nodecount);
+    genlimit = genlimit - 1;
+%     res = generation(new_population, PS, genlimit - 1, CR, MR, k, nodecount);
+end % While Loop
+
 end
 
 
@@ -199,11 +203,14 @@ function res = Run()
     nodecount = 52;
     nodes = createNodes(nodecount);
     
-    PS = 50;
-    GEN = 1000;
+    RNG = 1;
+    rng(RNG);
+    PS = 500;
+    GEN = 500;
     CR = 0.8;
-    MR = 0.3;
-    k = 5;
+    MR = 0.5;
+    k = 10;
+    disp(strcat("RNG: ", num2str(RNG)));
     disp(strcat("PS: ", num2str(PS)));
     disp(strcat("GEN: ", num2str(GEN)));
     disp(strcat("CR: ", num2str(CR)));
