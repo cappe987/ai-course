@@ -49,66 +49,63 @@ toc
 % end
 % sorted = sortrows(new, 2);
 
-function res = generation(population, PS, genlimit, nodecount)
+function res = generation(population, PS, genlimit, CR, MR, k, nodecount)
     if genlimit == 0
         res = population;
         return
     end
     
-    % Selection
-    % Tournament Selection with k=2
+    % Tournament Selection
     population = population(randperm(PS, PS)); % Randomize order.
-    i = 1;
-    idx = 1;
-    selectedcount = PS/2;
+    selectedcount = PS/k;
     selected = cell(1,selectedcount);
     best = Inf;
-    while i < PS
-        f1 = fitness(population{i});
-        f2 = fitness(population{i+1});
-        if f1 < f2
-            selected{idx} = population{i};
-        else
-            selected{idx} = population{i+1};
+    partition = reshape(population, k, []); % Partition into groups
+    for i = 1:PS/k
+        currBest = Inf;
+        for j = 1:k
+            value = fitness(partition{j,i});
+            if value < currBest
+                currBest = value;
+                bestIdx = j;
+            end
         end
-        if f1 < best
-            best = f1;
-            bestIndividual = population{i};
+        selected{i} = partition{bestIdx,i};
+        if currBest < best
+            best = currBest;
+            bestIndex = [bestIdx i];
         end
-        if f2 < best
-            best = f2;
-            bestIndividual = population{i+1};
-        end
-        
-        idx = idx + 1;
-        i = i + 2;
     end
         
     % Crossover
     new_population = cell(1,PS);
     idx = 1;
-    for i = 1:selectedcount
+    for i = 1:PS/2
         p1 = selected{randsample(selectedcount, 1)};
         p2 = selected{randsample(selectedcount, 1)};
-
-        from = randsample(nodecount-2, 1)+1;
-        to   = randsample(nodecount-2, 1)+1;
-        if from > to
-            temp = to;
-            to = from;
-            from = temp;
+        if rand() < CR
+            from = randsample(nodecount-2, 1)+1;
+            to   = randsample(nodecount-2, 1)+1;
+            if from > to
+                temp = to;
+                to = from;
+                from = temp;
+            end
+            child1 = crossover(p1, p2, from, to, nodecount);
+            child2 = crossover(p2, p1, from, to, nodecount);
+            new_population{idx} = child1;
+            new_population{idx + 1} = child2;
+        else
+            new_population{idx} = p1;
+            new_population{idx + 1} = p2;
         end
-        child1 = crossover(p1, p2, from, to, nodecount);
-        child2 = crossover(p2, p1, from, to, nodecount);
-        new_population{idx} = child1;
-        new_population{idx + 1} = child2;
         idx = idx + 2;
     end
 
     
     % Mutation
     for i = 1:PS
-        if rand() < 0.3
+        if rand() < MR
             i1 = randsample(nodecount-2, 1) + 1;
             i2 = randsample(nodecount-2, 1) + 1;
             temp = new_population{i}(i1);
@@ -120,10 +117,10 @@ function res = generation(population, PS, genlimit, nodecount)
     
     % Replacement
     % Using best individual that we calculated earlier.
-    new_population{1} = bestIndividual;
+    new_population{1} = partition{bestIndex(1), bestIndex(2)};
     
     
-    res = generation(new_population, PS, genlimit - 1, nodecount);
+    res = generation(new_population, PS, genlimit - 1, CR, MR, k, nodecount);
 end
 
 
@@ -203,6 +200,16 @@ function res = Run()
     nodes = createNodes(nodecount);
     
     PS = 50;
+    GEN = 1000;
+    CR = 0.8;
+    MR = 0.3;
+    k = 5;
+    disp(strcat("PS: ", num2str(PS)));
+    disp(strcat("GEN: ", num2str(GEN)));
+    disp(strcat("CR: ", num2str(CR)));
+    disp(strcat("MR: ", num2str(MR)));
+    disp(strcat("k: ", num2str(k)));
+    
     initial = cell(1,PS);
     
     for i = 1:PS
@@ -213,7 +220,7 @@ function res = Run()
         initial{i} = n;
     end
 %     res = initial;
-    population = generation(initial, PS, 4000, nodecount+1);
+    population = generation(initial, PS, GEN, CR, MR, k, nodecount+1);
     res = population; % fitness(population{1});
 %     for i = 1:nodecount+1
 %         disp(res{1,1}(1,i).ID);
