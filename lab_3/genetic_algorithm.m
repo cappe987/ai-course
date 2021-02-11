@@ -53,7 +53,7 @@ c.CR = 0.8;
 c.MR = 0.01;
 c.k = 10;
 % cs = [case2 case3 case4 case5];
-cs = [case5];
+% cs = [c];
 % function Run(Case, RNG, PS, GEN, CR, MR, k)
 
 % for i = 1:length(cs)
@@ -75,13 +75,35 @@ plot(gens);
 function [population, bestPerGen] = generation(population, PS, genlimit, CR, MR, k, nodecount)
 selectedcount = PS/k;
 selected = cell(1,selectedcount);
+% fitnessArr = zeros(1,PS);
 gen = 1;
 bestPerGen = zeros(1,genlimit);
 while genlimit ~= 0
+%     % Roulette selection
+%     sum = 0;
+%     best = Inf;
+%     for i = 1:PS
+%         val = fitness(population{i});
+%         sum = sum + val;
+%         fitnessArr(i) = val;
+%         if val < best
+%             best = val;
+%             bestIndividual = population{i};
+%         end
+%     end
+% 
+%     for i = 1:PS
+%         fitnessArr(i) = fitnessArr(i)/sum;
+%     end
     
-    % Tournament Selection
+%     for i = 1:PS
+%         population{i} = pickOne(population, fitnessArr);
+%     end
+    
+    
+%     Tournament Selection
     population = population(randperm(PS, PS)); % Randomize order.
-
+    
     best = Inf;
     partition = reshape(population, k, []); % Partition into groups
     for i = 1:PS/k
@@ -96,22 +118,21 @@ while genlimit ~= 0
         selected{i} = partition{bestIdx,i};
         if currBest < best
             best = currBest;
-            bestIndex = [bestIdx i];
+            bestIndividual = selected{i};
         end
     end
     bestPerGen(gen) = best;
     gen = gen + 1;
-%     if best < 9000
-%         res = population;
-%         return
-%     end
+
         
     % Crossover
 %     population = cell(1,PS);
     idx = 1;
-    for i = 1:PS/2
+    for i = 1:PS
         p1 = selected{randsample(selectedcount, 1)};
         p2 = selected{randsample(selectedcount, 1)};
+%         p1 = pickOne(population, fitnessArr);
+%         p2 = pickOne(population, fitnessArr);
         if rand() < CR
             from = randsample(nodecount-2, 1)+1;
             to   = randsample(nodecount-2, 1)+1;
@@ -121,14 +142,16 @@ while genlimit ~= 0
                 from = temp;
             end
             child1 = crossover(p1, p2, from, to, nodecount);
-            child2 = crossover(p2, p1, from, to, nodecount);
-            population{idx} = child1;
-            population{idx + 1} = child2;
+%             child2 = crossover(p2, p1, from, to, nodecount);
+            population{i} = child1;
+%             population{idx} = child1;
+%             population{idx + 1} = child2;
         else
-            population{idx} = p1;
-            population{idx + 1} = p2;
+            population{i} = p1;
+%             population{idx} = p1;
+%             population{idx + 1} = p2;
         end
-        idx = idx + 2;
+%         idx = idx + 2;
     end
 
     
@@ -138,6 +161,11 @@ while genlimit ~= 0
             if rand() < MR
                 i1 = randsample(nodecount-2, 1) + 1;
                 i2 = randsample(nodecount-2, 1) + 1;
+%                 if i1 == nodecount-1
+%                     i2 = i1-1;
+%                 else
+%                     i2 = i1+1;
+%                 end
                 temp = population{i}(i1);
                 population{i}(i1) = population{i}(i2);
                 population{i}(i2) = temp;
@@ -148,14 +176,23 @@ while genlimit ~= 0
     
     % Replacement
     % Using best individual that we calculated earlier.
-    population{1} = partition{bestIndex(1), bestIndex(2)};
-    
+%     population{1} = partition{bestIndex(1), bestIndex(2)};
+    population{1} = bestIndividual;
     genlimit = genlimit - 1;
 %     res = generation(new_population, PS, genlimit - 1, CR, MR, k, nodecount);
 end % While Loop
 
 end
 
+function res = pickOne(pop, probabilities)
+   idx = 1;
+   r = rand();
+   while r > 0
+       r = r - probabilities(idx);
+       idx = idx + 1;
+   end
+   res = pop{idx - 1};
+end
 
 function child = crossover(p1, p2, from, to, nodecount)
     child = Node.empty(0,nodecount);  
@@ -176,7 +213,6 @@ end
 
 function child = crossover2(p1, p2, from, to, nodecount)
     % Old crossover method. New version is a bit faster and much shorter.
-
     child = Node.empty(0,nodecount);  
     taken = zeros(1, to-from+1);
     for i = from:to
@@ -231,7 +267,6 @@ end
 function [population, gens] = Run(Case, RNG, PS, GEN, CR, MR, k)
     nodecount = 52;
     nodes = createNodes(nodecount);
-    
 
     rng(RNG);
     
