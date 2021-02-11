@@ -27,9 +27,9 @@
 % case1.MR = 0.01;
 % case1.k = 10;
 
-c.RNG = 3;
+c.RNG = 2;
 c.PS = 1000;
-c.GEN = 100;
+c.GEN = 200;
 c.CR = 0.8;
 c.MR = 0.01;
 c.k = 10;
@@ -41,6 +41,9 @@ c.k = 10;
 %     c = cs(i);
 [pop, gens] = Run(1, c.RNG, c.PS, c.GEN, c.CR, c.MR, c.k);
 plot(gens);
+% nodes = createNodes(52);
+% plot([nodes(pop(1,:)).X], [nodes(pop(1,:)).Y], '-o');
+
 % end
 
 % temp = res;
@@ -151,9 +154,16 @@ while genlimit ~= 0
 %                 else
 %                     i2 = i1+1;
 %                 end
-                temp = population(i,i1);
-                population(i,i1) = population(i,i2);
-                population(i,i2) = temp;
+                if i2 < i1
+                    temp = i1;
+                    i1 = i2;
+                    i2 = temp;
+                end
+                population(i,i1:i2) = flip(population(i,i1:i2));
+                  
+%                 temp = population(i,i1);
+%                 population(i,i1) = population(i,i2);
+%                 population(i,i2) = temp;
             end
         end
     end
