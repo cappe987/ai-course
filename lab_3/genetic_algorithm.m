@@ -14,25 +14,6 @@
 % Let E(X_i, X_j) be the euclidean distance between city i and j.
 % Minimize sum_{1}^{n-1}{E(X_i, X_{i+1)}
 
-
-% nodes = createNodes(52);
-% plot([nodes.X], [nodes.Y], '-o');
-% g = graph();
-% g = addnode(g, 52);
-% 
-% for i = 1:51
-%     g = addedge(g, i, i+1);
-% end
-% plot(g);
-% arr = zeros(2,52);
-% arr(1:52) = [nodes.X];
-% arr(53:104) = [nodes.Y]; 
-% scatter([nodes.X], [nodes.Y])
-% arr(1) = [nodes.X];
-% arr(2) = [nodes.Y];
-
-% createNodes(52)
-
 % tic
 % res = Run();
 % fitness(res{1})
@@ -46,9 +27,9 @@
 % case1.MR = 0.01;
 % case1.k = 10;
 
-c.RNG = 1;
+c.RNG = 3;
 c.PS = 1000;
-c.GEN = 200;
+c.GEN = 100;
 c.CR = 0.8;
 c.MR = 0.01;
 c.k = 10;
@@ -72,9 +53,9 @@ plot(gens);
 % end
 % sorted = sortrows(new, 2);
 
-function [population, bestPerGen] = generation(population, PS, genlimit, CR, MR, k, nodecount)
+function [population, bestPerGen] = generation(population, PS, genlimit, CR, MR, k, nodecount, distmat)
 selectedcount = PS/k;
-selected = cell(1,selectedcount);
+selected = zeros(selectedcount, nodecount);
 % fitnessArr = zeros(1,PS);
 gen = 1;
 bestPerGen = zeros(1,genlimit);
@@ -102,23 +83,27 @@ while genlimit ~= 0
     
     
 %     Tournament Selection
-    population = population(randperm(PS, PS)); % Randomize order.
-    
+%     population = population(randperm(PS, PS), :); % Randomize order.
+
     best = Inf;
-    partition = reshape(population, k, []); % Partition into groups
+%     partition = reshape(population, k, []); % Partition into groups
+    rowsToTake = randperm(PS, PS); % Generate a permutation for indices
+    rowIdx = 1;
     for i = 1:PS/k
         currBest = Inf;
         for j = 1:k
-            value = fitness(partition{j,i});
+            idx = rowsToTake(rowIdx);
+            value = fitness(population(idx, :), distmat);
+            rowIdx = rowIdx + 1;
             if value < currBest
                 currBest = value;
-                bestIdx = j;
+                bestIdx = idx;
             end
         end
-        selected{i} = partition{bestIdx,i};
+        selected(i,:) = population(bestIdx, :);
         if currBest < best
             best = currBest;
-            bestIndividual = selected{i};
+            bestIndividual = selected(i,:);
         end
     end
     bestPerGen(gen) = best;
@@ -129,13 +114,13 @@ while genlimit ~= 0
 %     population = cell(1,PS);
     idx = 1;
     for i = 1:PS
-        p1 = selected{randsample(selectedcount, 1)};
-        p2 = selected{randsample(selectedcount, 1)};
+        p1 = selected(randsample(selectedcount, 1), :);
+        p2 = selected(randsample(selectedcount, 1), :);
 %         p1 = pickOne(population, fitnessArr);
 %         p2 = pickOne(population, fitnessArr);
         if rand() < CR
-            from = randsample(nodecount-2, 1)+1;
-            to   = randsample(nodecount-2, 1)+1;
+            from = randsample(nodecount-1, 1)+1;
+            to   = randsample(nodecount-1, 1)+1;
             if from > to
                 temp = to;
                 to = from;
@@ -143,11 +128,11 @@ while genlimit ~= 0
             end
             child1 = crossover(p1, p2, from, to, nodecount);
 %             child2 = crossover(p2, p1, from, to, nodecount);
-            population{i} = child1;
+            population(i,:) = child1;
 %             population{idx} = child1;
 %             population{idx + 1} = child2;
         else
-            population{i} = p1;
+            population(i,:) = p1;
 %             population{idx} = p1;
 %             population{idx + 1} = p2;
         end
@@ -157,18 +142,18 @@ while genlimit ~= 0
     
     % Mutation
     for i = 1:PS
-        for j = 1:nodecount-1
+        for j = 1:nodecount
             if rand() < MR
-                i1 = randsample(nodecount-2, 1) + 1;
-                i2 = randsample(nodecount-2, 1) + 1;
+                i1 = randsample(nodecount-1, 1) + 1;
+                i2 = randsample(nodecount-1, 1) + 1;
 %                 if i1 == nodecount-1
 %                     i2 = i1-1;
 %                 else
 %                     i2 = i1+1;
 %                 end
-                temp = population{i}(i1);
-                population{i}(i1) = population{i}(i2);
-                population{i}(i2) = temp;
+                temp = population(i,i1);
+                population(i,i1) = population(i,i2);
+                population(i,i2) = temp;
             end
         end
     end
@@ -177,7 +162,7 @@ while genlimit ~= 0
     % Replacement
     % Using best individual that we calculated earlier.
 %     population{1} = partition{bestIndex(1), bestIndex(2)};
-    population{1} = bestIndividual;
+    population(1,:) = bestIndividual;
     genlimit = genlimit - 1;
 %     res = generation(new_population, PS, genlimit - 1, CR, MR, k, nodecount);
 end % While Loop
@@ -195,10 +180,10 @@ function res = pickOne(pop, probabilities)
 end
 
 function child = crossover(p1, p2, from, to, nodecount)
-    child = Node.empty(0,nodecount);  
-    child(1) = p1(1); % Set city 1 first
+    child = zeros(1,nodecount);  
+    child(1) = 1; % Set city 1 first
     taken = p1(from:to);
-    [~, ia] = setdiff([p2.ID], [1 taken.ID], 'stable');
+    [~, ia] = setdiff(p2, [1 taken], 'stable');
     p2noP1 = p2(ia);
     
     child(2:from-1) = p2noP1(1:from-2);
@@ -206,9 +191,9 @@ function child = crossover(p1, p2, from, to, nodecount)
 %     if to ~= nodecount
     
 
-    child(to+1:nodecount-1) = p2noP1(from-1:end);
+    child(to+1:nodecount) = p2noP1(from-1:end);
 %     end
-    child(nodecount) = p1(1); % Set city 1 last.
+%     child(nodecount) = p1(1); % Set city 1 last.
 end
 
 function child = crossover2(p1, p2, from, to, nodecount)
@@ -245,12 +230,12 @@ function child = crossover2(p1, p2, from, to, nodecount)
     end
 end
 
-function value = fitness(indv)
+function value = fitness(indv, distmat)
     value = 0;
     for i = 1:length(indv)-1
-        % Not using a function for the euclid calculations took off ~30s.
-        value = value + sqrt((indv(i+1).X - indv(i).X)^2 + (indv(i+1).Y - indv(i).Y)^2);
+        value = value + distmat(indv(i), indv(i+1));
     end
+    value = value + distmat(1, indv(length(indv))); % Back to start
 end
 
 function nodes = createNodes(nodecount)
@@ -267,21 +252,27 @@ end
 function [population, gens] = Run(Case, RNG, PS, GEN, CR, MR, k)
     nodecount = 52;
     nodes = createNodes(nodecount);
-
+    
+    distmat = zeros(nodecount, nodecount);
+    for i = 1:nodecount
+        for j = 1:nodecount
+            distmat(i,j) = sqrt((nodes(j).X - nodes(i).X)^2 + (nodes(j).Y - nodes(i).Y)^2);
+        end
+    end
+    
     rng(RNG);
     
-    initial = cell(1,PS);
-    
+%     initial = cell(1,PS);
+    initial = zeros(PS,52);
     for i = 1:PS
-        n = Node.empty(0,53);
-        n(1) = nodes(1);
-        n(2:nodecount) = nodes(randperm(nodecount-1, nodecount-1)+1);
-        n(nodecount+1) = nodes(1);
-        initial{i} = n;
+        initial(i,1) = 1;
+        initial(i,2:nodecount) = randperm(nodecount-1, nodecount-1)+1;
+%         n(nodecount+1) = nodes(1);
+%         initial{i} = n;
     end
 %     res = initial;
     tic
-    [population, gens] = generation(initial, PS, GEN, CR, MR, k, nodecount+1);
+    [population, gens] = generation(initial, PS, GEN, CR, MR, k, nodecount, distmat);
     disp(strcat("--- Case ", num2str(Case), " ---"));
     disp(strcat("RNG: ", num2str(RNG)));
     disp(strcat("PS: ", num2str(PS)));
@@ -289,7 +280,7 @@ function [population, gens] = Run(Case, RNG, PS, GEN, CR, MR, k)
     disp(strcat("CR: ", num2str(CR)));
     disp(strcat("MR: ", num2str(MR)));
     disp(strcat("k: ", num2str(k)));
-    disp(fitness(population{1}))
+    disp(fitness(population(1,:), distmat))
     toc
 %     res = population; % fitness(population{1});
 %     for i = 1:nodecount+1
