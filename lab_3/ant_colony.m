@@ -3,10 +3,10 @@
 
 
 RNG = 1;
-alpha = 0.5;
-beta = 0.5;
+alpha = 0.5; % Saved information \alpha >= 0
+beta = 2; % Heuristic information \beta >= 1
 evaporation_rate = 0.8;
-PS = 10;
+PS = 50;
 GEN = 100;
 
 disp(strcat("RNG: ", num2str(RNG)));
@@ -14,12 +14,14 @@ disp(strcat("PS: ", num2str(PS)));
 disp(strcat("GEN: ", num2str(GEN)));
 disp(strcat("Alpha: ", num2str(alpha)));
 disp(strcat("Beta: ", num2str(beta)));
-disp(strcat("Evaporation rate: ", num2str(ceil(evaporation_rate))));
+disp(strcat("Evaporation rate: ", num2str(evaporation_rate)));
 
 tic
-[pop, gens, best] = Run(RNG, PS, GEN, alpha, beta, evaporation_rate);
-disp(strcat("Fitness: ", num2str(best)));
+[bestAnt, gens, best] = Run(RNG, PS, GEN, alpha, beta, evaporation_rate);
+disp(strcat("Fitness: ", num2str(ceil(best))));
 plot(gens);
+% nodes = createNodes(52);
+% plot([nodes(bestAnt).X], [nodes(bestAnt).Y], '-o');
 
 toc
 
@@ -42,9 +44,10 @@ function value = fitness(ant, distmat)
     value = value + distmat(1, ant(length(ant))); % Last city -> start
 end
 
-function [ants, gens, best] = Run(RNG, PS, GEN, alpha, beta, evap_rate)
+function [bestAnt, gens, best] = Run(RNG, PS, GEN, alpha, beta, evap_rate)
     nodecount = 52;
     nodes = createNodes(nodecount);
+    rng(RNG);
     
     distmat = zeros(nodecount, nodecount);
     for i = 1:nodecount
@@ -66,22 +69,20 @@ function [ants, gens, best] = Run(RNG, PS, GEN, alpha, beta, evap_rate)
     
     ants = zeros(PS, nodecount);
     for i = 1:PS
-        ants(i,1) = 1; % Set first node to start
+        ants(i,:) = 1:52;
     end
     
-    [ants, gens, best] = generation(ants, nodecount, distmat, PS, GEN, eta, alpha, beta, evap_rate);
+    [bestAnt, gens, best] = generation(ants, nodecount, distmat, PS, GEN, eta, alpha, beta, evap_rate);
     
 end
 
 
-function [ants, bestPerGen, globalBest] = generation(initial, nodecount, distmat, PS, genlimit, eta, alpha, beta, evap_rate)
+function [globalBestAnt, bestPerGen, globalBest] = generation(initial, nodecount, distmat, PS, genlimit, eta, alpha, beta, evap_rate)
 gen = 1;
 costs = zeros(1,PS);
 bestPerGen = zeros(1,genlimit);
 globalBest = Inf;
-% tau = zeros(nodecount, nodecount);
 tau(1:nodecount,1:nodecount) = 10; % Initialize all to 10;
-% eta = zeros(nodecount, nodecount);
 
 while gen <= genlimit
     ants = initial;
@@ -89,7 +90,7 @@ while gen <= genlimit
     % Build solutions
     for i = 2:nodecount
         for k = 1:PS
-            ants(k,i) = transition_rule(ants(k,:), tau, eta, alpha, beta, nodecount);
+            ants(k,:) = transition_rule(ants(k,:), tau, eta, alpha, beta, nodecount, i);
         end
     end
     
@@ -105,15 +106,22 @@ while gen <= genlimit
     end
     
     % Update pheromones
-    for i = 1:nodecount
-        for j = 1:nodecount
-            tau(i,j) = pheromone_update(i, j, tau(i,j), evap_rate, ants, costs, PS);
+    sums = zeros(nodecount, nodecount);
+    % Collect the sums of all costs for the edges. 
+    % Then update all tau at once.
+    for k = 1:PS
+        ant = ants(k,:);
+        for i = 1:nodecount-1 
+            r = ant(i);
+            s = ant(i+1);
+            sums(r,s) = sums(r,s) + (1 / costs(k));
         end
     end
-%     function pheromone = pheromone_update(r, s, pheromone, evaporation_rate, ants, costs, PS)
-
+    tau = (1 - evap_rate) * tau + sums;
+    
     if best < globalBest
         globalBest = best;
+        globalBestAnt = bestAnt;
     end
     bestPerGen(gen) = globalBest;
     
@@ -124,33 +132,34 @@ end
 end
 
 
-function node = transition_rule(ant, tau, eta, alpha, beta, nodecount)
-    rem = strfind(ant, 0); 
-    r = ant(rem(1) - 1); % Find current node
+function ant = transition_rule(ant, tau, eta, alpha, beta, nodecount, nextIndex)
     % If rem is empty, it has reached the end. Shouldn't happen.
+    % Not visited nodes are the ones ater nextIndex. 
+    r = ant(nextIndex-1);
     
     probs = zeros(1,nodecount);
-    probIds = zeros(1,nodecount);
-    notvisited = setdiff(1:nodecount, ant);
+    probIndices = zeros(1,nodecount);
     
     usum = 0;
-    for i = 1:length(notvisited)
-        u = notvisited(i);
+    for i = nextIndex:nodecount % Not visited
+        u = ant(i);
         if r ~= u
             usum = usum + tau(r,u)^alpha * eta(r,u)^beta;
         end
     end
     
     % Create probability vector
-    for i = 1:length(notvisited)
-        s = notvisited(i);
+    idx = 1;
+    for i = nextIndex:nodecount
+        s = ant(i);
         if r ~= s
-            probs(i) = (tau(r,s)^alpha * eta(r,s)^beta) / usum;
-            probIds(i) = s;
+            probs(idx) = (tau(r,s)^alpha * eta(r,s)^beta) / usum;
+            probIndices(idx) = i;
         else
-            probs(i) = 0;
-            probIds(i) = NaN;
+            probs(idx) = 0;
+            probIndices(idx) = NaN;
         end
+        idx = idx + 1;
     end
         
     % Select random node based on probability
@@ -162,12 +171,14 @@ function node = transition_rule(ant, tau, eta, alpha, beta, nodecount)
         idx = idx + 1;
     end
     idx = idx - 1;
-    node = probIds(idx);
+    % Switch next and the one found to be next. 
+    % So not visited are kept at the end.
+    ant([nextIndex probIndices(idx)]) = ant([probIndices(idx) nextIndex]);
 end
 
 function pheromone = pheromone_update(r, s, pheromone, evaporation_rate, ants, costs, PS)
     sum = 0;
-    edge = [r s];
+%     edge = [r s];
     for k = 1:PS
          % \delta\tau_{rs}^{k}
 %         for i = 1:51
@@ -176,7 +187,10 @@ function pheromone = pheromone_update(r, s, pheromone, evaporation_rate, ants, c
 %                 break;
 %             end
 %         end
-        if strfind(ants(k,:), edge) % Checks if edge is subvector of path.
+%         if strfind(ants(k,:), edge) % Checks if edge is subvector of path.
+%             sum = sum + (1 / costs(k));
+%         end
+        if find(ants(k,:) == r) + 1 == find(ants(k,:) == s)
             sum = sum + (1 / costs(k));
         end
     end
