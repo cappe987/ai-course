@@ -36,7 +36,7 @@ function nodes = createNodes(nodecount)
     end
 end
 
-function value = fitness(ant, distmat)
+function value = fitness(ant, distmat) % Cost of path
     value = 0;
     for i = 1:length(ant)-1 % All cities
         value = value + distmat(ant(i), ant(i+1)); 
@@ -105,6 +105,12 @@ while gen <= genlimit
         end
     end
     
+    if best < globalBest
+        globalBest = best;
+        globalBestAnt = bestAnt;
+    end
+    bestPerGen(gen) = globalBest;
+
     % Update pheromones
     sums = zeros(nodecount, nodecount);
     % Collect the sums of all costs for the edges. 
@@ -118,13 +124,7 @@ while gen <= genlimit
         end
     end
     tau = (1 - evap_rate) * tau + sums;
-    
-    if best < globalBest
-        globalBest = best;
-        globalBestAnt = bestAnt;
-    end
-    bestPerGen(gen) = globalBest;
-    
+
     
     gen = gen + 1;
 end
@@ -176,27 +176,7 @@ function ant = transition_rule(ant, tau, eta, alpha, beta, nodecount, nextIndex)
     ant([nextIndex probIndices(idx)]) = ant([probIndices(idx) nextIndex]);
 end
 
-function pheromone = pheromone_update(r, s, pheromone, evaporation_rate, ants, costs, PS)
-    sum = 0;
-%     edge = [r s];
-    for k = 1:PS
-         % \delta\tau_{rs}^{k}
-%         for i = 1:51
-%             if ants(k,i) == r && ants(k,i+1) == s
-%                 sum = sum + (1 / costs(k));
-%                 break;
-%             end
-%         end
-%         if strfind(ants(k,:), edge) % Checks if edge is subvector of path.
-%             sum = sum + (1 / costs(k));
-%         end
-        if find(ants(k,:) == r) + 1 == find(ants(k,:) == s)
-            sum = sum + (1 / costs(k));
-        end
-    end
-        
-    pheromone = (1 - evaporation_rate) * pheromone + sum;
-end
+
 
 
 
