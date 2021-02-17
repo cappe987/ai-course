@@ -86,7 +86,7 @@ function [val, move] = maxValue(state, alpha, beta, depth)
         else
             [newval, ~] = minValue(newstate, alpha, beta, depth-1);
         end
-        if newval > val % Takes the last move if several are equal
+        if newval > val
             val = newval;
             move = a;
         end
@@ -116,7 +116,7 @@ function [val, move] = minValue(state, alpha, beta, depth)
         else
             [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
         end
-        if newval < val % Takes the last move if several are equal
+        if newval < val
             val = newval;
             move = a;
         end
