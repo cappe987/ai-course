@@ -1,5 +1,8 @@
 clear all;
 
+% [state, goAgain] = doMove([4 4 4 4 4 4 0 0 0 4 4 4 9 0], 13)
+% [val,a] = minValue([0 0 0 0 1 5 7 0 0 0 0 7 0 28], -Inf, Inf, 3)
+% return;
 
 fprintf('     This is the CLIENT\n\n');
 playerName = "Matlab Player";
@@ -44,16 +47,162 @@ while ~gameEnd
             i = i + 1;
             j = j+2;
         end
-        
+%         disp(board);
+%         return;
         % Using your intelligent bot, assign a move to "move".
         % 
         % example: move = '1'; Possible moves from '1' to '6' if the game's 
         % rules allows those moves.
         
         % TODO: Change this %%%%%%%%%%
-        move = '0';
+        
+        alpha = -Inf;
+        beta = Inf;
+        depth = 3;
+%         disp(board);
+        if playerTurn == 1
+            [~, a] = maxValue(board, alpha, beta, depth);
+        elseif playerTurn == 2
+            [~, a] = minValue(board, alpha, beta, depth);
+            a = a - 7; % To get it in range 1-6
+        end
+        
+        move = num2str(a);
+%         move = '1';
+%         disp(move);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         fwrite(t, move)
        
     end
 end
+
+
+function [val, move] = maxValue(state, alpha, beta, depth)
+    if depth < 0 || all(state(1:6) == 0)
+        val = evalState(state);
+        move = NaN;
+        return;
+    end
+    val = -Inf;
+    move = NaN;
+    for a = 1:6
+        if state(a) == 0
+            continue
+        end
+        [newstate, goAgain] = doMove(state, a);
+        if goAgain
+            [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
+%             val = max(val, newval);
+        else
+            [newval, ~] = minValue(newstate, alpha, beta, depth-1);
+%             val = max(val, newval);
+        end
+        if newval > val
+            val = newval;
+            move = a;
+        end
+        if val >= beta
+            return;
+        end
+        
+        alpha = max(alpha, val);
+    end
+end
+
+function [val, move] = minValue(state, alpha, beta, depth)
+    if depth < 0 || all(state(8:13) == 0)
+        val = evalState(state);
+        move = NaN;
+        return;
+    end
+    val = Inf;
+    move = NaN;
+    for a = 8:13
+        if state(a) == 0
+            continue
+        end
+        [newstate, goAgain] = doMove(state, a);
+        if goAgain
+            [newval, ~] = minValue(newstate, alpha, beta, depth-1);
+%             val = min(val, newval);
+        else
+            [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
+%             val = min(val, newval);
+        end
+        if newval < val
+            val = newval;
+            move = a;
+        end
+        if val <= alpha
+            return;
+        end
+        
+        beta = min(beta, val);
+    end
+end
+
+function [state, goAgain] = doMove(state, a)
+    rocks = state(a);
+    state(a) = 0;
+    goAgain = false;
+    if a < 7
+        player = 1;
+    else
+        player = 2;
+    end
+    
+    i = 0;
+    idx = a;
+    % Move the rocks
+%     disp(player);
+    while i < rocks
+        idx = mod(idx + 1, 15);
+        if idx == 0
+            idx = 1;
+        end
+%         disp(idx);
+        if (idx == 7 && player == 2) || (idx == 14 && player == 1) 
+%             idx = mod(idx + 1, 15) + 1;
+            continue;
+        end
+        state(idx) = state(idx) + 1;
+        i = i + 1;
+%         if i >= rocks
+%             break;
+%         end
+    end
+    
+    % Go again
+    if (player == 1 && idx == 7) || (player == 2 && idx == 14)
+        goAgain = true;
+%         return;
+    end
+    
+    % Take stones from opponent
+    if player == 1 && idx < 7 && state(idx) == 1
+        taken = state(14 - idx);
+        state(14 - idx) = 0;
+        state(7) = state(7) + taken;
+    elseif player == 2 && idx > 7 && idx < 14 && state(idx) == 1
+        taken = state(14 - idx);
+        state(14 - idx) = 0;
+        state(14) = state(14) + taken;
+    end
+
+end
+
+function val = evalState(state)
+    
+    if all(state(1:6) == 0)
+        state(14) = state(14) + sum(state(8:13));
+    elseif all(state(8:13) == 0)
+        state(7) = state(7) + sum(state(1:6));
+    end
+        
+        
+    val = state(7) - state(14);
+
+end
+
+
+
