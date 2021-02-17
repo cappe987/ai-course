@@ -1,9 +1,5 @@
 clear all;
 
-% [state, goAgain] = doMove([4 4 4 4 4 4 0 0 0 4 4 4 9 0], 13)
-% [val,a] = minValue([0 0 0 0 1 5 7 0 0 0 0 7 0 28], -Inf, Inf, 3)
-% return;
-
 fprintf('     This is the CLIENT\n\n');
 playerName = "Matlab Player";
 t = tcpip('localhost', 30000, 'NetworkRole', 'client');
@@ -47,8 +43,6 @@ while ~gameEnd
             i = i + 1;
             j = j+2;
         end
-%         disp(board);
-%         return;
         % Using your intelligent bot, assign a move to "move".
         % 
         % example: move = '1'; Possible moves from '1' to '6' if the game's 
@@ -59,7 +53,6 @@ while ~gameEnd
         alpha = -Inf;
         beta = Inf;
         depth = 3;
-%         disp(board);
         if playerTurn == 1
             [~, a] = maxValue(board, alpha, beta, depth);
         elseif playerTurn == 2
@@ -68,8 +61,6 @@ while ~gameEnd
         end
         
         move = num2str(a);
-%         move = '1';
-%         disp(move);
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         fwrite(t, move)
        
@@ -78,7 +69,7 @@ end
 
 
 function [val, move] = maxValue(state, alpha, beta, depth)
-    if depth < 0 || all(state(1:6) == 0)
+    if depth < 0 || all(state(1:6) == 0) % Side is empty
         val = evalState(state);
         move = NaN;
         return;
@@ -92,12 +83,10 @@ function [val, move] = maxValue(state, alpha, beta, depth)
         [newstate, goAgain] = doMove(state, a);
         if goAgain
             [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
-%             val = max(val, newval);
         else
             [newval, ~] = minValue(newstate, alpha, beta, depth-1);
-%             val = max(val, newval);
         end
-        if newval > val
+        if newval >= val % Takes the last move if several are equal
             val = newval;
             move = a;
         end
@@ -110,7 +99,7 @@ function [val, move] = maxValue(state, alpha, beta, depth)
 end
 
 function [val, move] = minValue(state, alpha, beta, depth)
-    if depth < 0 || all(state(8:13) == 0)
+    if depth < 0 || all(state(8:13) == 0) % Side is empty
         val = evalState(state);
         move = NaN;
         return;
@@ -124,12 +113,10 @@ function [val, move] = minValue(state, alpha, beta, depth)
         [newstate, goAgain] = doMove(state, a);
         if goAgain
             [newval, ~] = minValue(newstate, alpha, beta, depth-1);
-%             val = min(val, newval);
         else
             [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
-%             val = min(val, newval);
         end
-        if newval < val
+        if newval <= val % Takes the last move if several are equal
             val = newval;
             move = a;
         end
@@ -154,28 +141,22 @@ function [state, goAgain] = doMove(state, a)
     i = 0;
     idx = a;
     % Move the rocks
-%     disp(player);
     while i < rocks
         idx = mod(idx + 1, 15);
         if idx == 0
             idx = 1;
         end
-%         disp(idx);
         if (idx == 7 && player == 2) || (idx == 14 && player == 1) 
-%             idx = mod(idx + 1, 15) + 1;
             continue;
         end
         state(idx) = state(idx) + 1;
         i = i + 1;
-%         if i >= rocks
-%             break;
-%         end
+
     end
     
     % Go again
     if (player == 1 && idx == 7) || (player == 2 && idx == 14)
         goAgain = true;
-%         return;
     end
     
     % Take stones from opponent
@@ -192,16 +173,18 @@ function [state, goAgain] = doMove(state, a)
 end
 
 function val = evalState(state)
-    
-    if all(state(1:6) == 0)
+    val = 0;
+    if all(state(1:6) == 0) % One side is empty
         state(14) = state(14) + sum(state(8:13));
-    elseif all(state(8:13) == 0)
+    elseif all(state(8:13) == 0) % Other side is empty
         state(7) = state(7) + sum(state(1:6));
     end
-        
-        
-    val = state(7) - state(14);
-
+    
+    % Counts the rocks in the stores and the two slots closest to the
+    % stores. Some paper said this was a good idea.
+    val = val + (state(7) - state(14)); % Stores
+    val = val + (state(6) - state(13)); % Closest to stores
+    val = val + (state(5) - state(12)); % Second closest to stores
 end
 
 
