@@ -86,7 +86,7 @@ function [val, move] = maxValue(state, alpha, beta, depth)
         else
             [newval, ~] = minValue(newstate, alpha, beta, depth-1);
         end
-        if newval >= val % Takes the last move if several are equal
+        if newval > val % Takes the last move if several are equal
             val = newval;
             move = a;
         end
@@ -116,7 +116,7 @@ function [val, move] = minValue(state, alpha, beta, depth)
         else
             [newval, ~] = maxValue(newstate, alpha, beta, depth-1);
         end
-        if newval <= val % Takes the last move if several are equal
+        if newval < val % Takes the last move if several are equal
             val = newval;
             move = a;
         end
@@ -180,11 +180,10 @@ function val = evalState(state)
         state(7) = state(7) + sum(state(1:6));
     end
     
-    % Counts the rocks in the stores and the two slots closest to the
-    % stores. Some paper said this was a good idea.
+    % Counts the rocks in the stores and how many moves we can do.
+    % Some paper said this was a good idea.
     val = val + (state(7) - state(14)); % Stores
-    val = val + (state(6) - state(13)); % Closest to stores
-    val = val + (state(5) - state(12)); % Second closest to stores
+    val = val + (sum(state(1:6) ~= 0) - sum(state(8:13) ~= 0));
 end
 
 
