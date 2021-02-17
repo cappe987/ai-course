@@ -169,17 +169,18 @@ function [state, goAgain] = doMove(state, a)
         state(14 - idx) = 0;
         state(14) = state(14) + taken;
     end
-
+    
+    if all(state(1:6) == 0) % One side is empty
+        state(14) = state(14) + sum(state(8:13));
+        state(8:13) = zeros(1,6);
+    elseif all(state(8:13) == 0) % Other side is empty
+        state(7) = state(7) + sum(state(1:6));
+        state(1:6) = zeros(1,6);
+    end
 end
 
 function val = evalState(state)
     val = 0;
-    if all(state(1:6) == 0) % One side is empty
-        state(14) = state(14) + sum(state(8:13));
-    elseif all(state(8:13) == 0) % Other side is empty
-        state(7) = state(7) + sum(state(1:6));
-    end
-    
     % Counts the rocks in the stores and how many moves we can do.
     % Some paper said this was a good idea.
     val = val + (state(7) - state(14)); % Stores
