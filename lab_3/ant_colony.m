@@ -4,10 +4,10 @@
 
 RNG = 1;
 alpha = 0.5; % Saved information \alpha >= 0
-beta = 2; % Heuristic information \beta >= 1
+beta = 4; % Heuristic information \beta >= 1
 evaporation_rate = 0.8;
 PS = 50;
-GEN = 100;
+GEN = 200;
 
 disp(strcat("RNG: ", num2str(RNG)));
 disp(strcat("PS: ", num2str(PS)));
