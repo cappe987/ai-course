@@ -1,25 +1,20 @@
 % clear all
 
-% [testAcc, perClass] = test(layers, bestW, B, weightCount, inputs, targets, 800:n);
-% fprintf("Test %d: %.1f%%\n", i, testAcc);
-% for i = 1:10
-%     fprintf("Percentage correct for %d: %.1f\n", i-1, perClass(i));
-% end
-% return;
 
+
+% input - hidden layers - output
+layers = [784 200 50 10]; 
+n = 2000;
 rng(1);
-
-layers = [784 200 100 10]; % input - hidden layers - output
 eta = 0.1; % Learning rate
-% inputs = [1 3 1; 2 3 2];
-% targets = [1 2 1];
+
 
 weightCount = length(layers)-1;
 
 % matrix = loadMatrix();
 
 tic
-n = 1000; % 5000
+
 inputs = transpose(matrix(1:n, 2:end));
 targets = matrix(1:n,1);
 
@@ -45,22 +40,22 @@ function [W,B, trainingAccs, validationAccs] = doTraining(layers, weightCount, e
     validationRange = (tenth*7):(tenth*8 - 1);
     testStart = tenth*8;
     i = 1;
-    j = 3;
+    j = 1;
     while j > 0
         [W, trainAcc] = train(layers, weightCount, eta, W, B, inputs, targets, n);
         acc = validate(layers, W, B, weightCount, inputs, targets, validationRange);
-        fprintf("---- Iteration %d ----\n", i);
-        fprintf("Training   : %.1f%%\n", trainAcc);
-        fprintf("Validation : %.1f%%\n", acc);
+        [testAcc, perClass] = test(layers, W, B, weightCount, inputs, targets, testStart:n);
+        fprintf("---- Epoch %d ----\n", i);
+        fprintf("Training: %.1f%% | Validation: %.1f%% | Test: %.1f%% {", trainAcc, acc, testAcc);
+        for k = 1:9
+            fprintf("(%d: %.1f%%), ", k-1, perClass(k));
+        end
+        fprintf("(%d: %.1f%%)}\n", 9, perClass(9));
         trainingAccs(i) = trainAcc;
         validationAccs(i) = acc;
         i = i + 1;
-        if acc > 80
-            [testAcc, perClass] = test(layers, W, B, weightCount, inputs, targets, testStart:n);
-            fprintf("Test: %.1f%%\n", testAcc);
-            for i = 1:10
-                fprintf("Percentage correct for %d: %.1f%%\n", i-1, perClass(i));
-            end
+%         fprintf("", testAcc);
+        if testAcc > 80
             j = j - 1;
         end
     end
@@ -227,8 +222,25 @@ function val = derivsigmoid(x)
     val = (1/(1+exp(-x)))*(1 - 1/(1+exp(-x)));
 end
 
+function val = relu(x) 
+    if x <= 0 
+        val = 0;
+    else
+        val = x;
+    end
+end
 
+function val = derivrelu(x)
+    if x <= 0
+        val = 0;
+    else
+        val = 1;
+    end
+end
 
+function val = derivtanh(x)
+    val = 1 - tanh(x)^2;
+end
 
 
 
