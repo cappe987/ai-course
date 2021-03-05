@@ -5,13 +5,13 @@
 % input - hidden layers - output
 layers = [784 200 50 10]; 
 n = 2000;
-rng(1);
+rng(44);
 eta = 0.1; % Learning rate
 
 
 weightCount = length(layers)-1;
 
-% matrix = loadMatrix();
+matrix = loadMatrix();
 
 tic
 
@@ -19,7 +19,7 @@ inputs = transpose(matrix(1:n, 2:end));
 targets = matrix(1:n,1);
 
 
-[W,B, tAccs, vAccs] = doTraining(layers, weightCount, eta, inputs, targets, n);
+[W, B, tAccs, vAccs] = doTraining(layers, weightCount, eta, inputs, targets, n);
 
 % L = runNetwork(layers, W, B, weightCount, inputs(:,14)); % 41: 9
 % disp(outputToNum(L{end}));
@@ -42,7 +42,7 @@ function [W,B, trainingAccs, validationAccs] = doTraining(layers, weightCount, e
     i = 1;
     j = 1;
     while j > 0
-        [W, trainAcc] = train(layers, weightCount, eta, W, B, inputs, targets, n);
+        [W, B, trainAcc] = train(layers, weightCount, eta, W, B, inputs, targets, n);
         acc = validate(layers, W, B, weightCount, inputs, targets, validationRange);
         [testAcc, perClass] = test(layers, W, B, weightCount, inputs, targets, testStart:n);
         fprintf("---- Epoch %d ----\n", i);
@@ -62,7 +62,7 @@ function [W,B, trainingAccs, validationAccs] = doTraining(layers, weightCount, e
     disp("Training done");
 end
 
-function [W, acc] = train(layers, weightCount, eta, W, B, inputs, targets, n)
+function [W, B, acc] = train(layers, weightCount, eta, W, B, inputs, targets, n)
     tenth = floor(n/10);
     trainEnd = tenth*7 - 1;
     results = zeros(1,trainEnd);
@@ -93,6 +93,9 @@ function [W, acc] = train(layers, weightCount, eta, W, B, inputs, targets, n)
                 for j = 1:layers(lay+1)
                     weightDeltas{lay}(j,i) = eta * delta(j) * L{lay}(i);
                 end
+            end
+            for j = 1:layers(lay+1)
+                B{lay}(j) = B{lay}(j) + eta * delta(j);
             end
             % Calculate all delta J for layer i
             newDeltas = zeros(1,layers(lay));
@@ -126,7 +129,8 @@ end
 
 function L = runNetwork(layers, W, B, weightCount, input)
     L = cell(1, length(layers)); % L{1} is input. L{end} is output
-    L{1} = arrayfun(@(x) sigmoid(x), input);%Input. Do we use sigmoid on input?
+%     L{1} = arrayfun(@(x) sigmoid(x), input);%Input. Do we use sigmoid on input?
+    L{1} = input;
     for i = 1:weightCount-1
         A = W{i}*L{i} + B{i}; % Linear regression with multiple variables
         L{i+1} = arrayfun(@(x) sigmoid(x), A); 
