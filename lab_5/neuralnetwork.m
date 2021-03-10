@@ -4,6 +4,7 @@
 
 % input - hidden layers - output
 layers = [784 200 50 10]; 
+% layers = [784 100 10];
 n = 2000;
 rng(44);
 eta = 0.1; % Learning rate
@@ -11,7 +12,7 @@ eta = 0.1; % Learning rate
 
 weightCount = length(layers)-1;
 
-matrix = loadMatrix();
+% matrix = loadMatrix();
 
 tic
 
@@ -89,21 +90,25 @@ function [W, B, acc] = train(layers, weightCount, eta, W, B, inputs, targets, n)
 
         for lay = flip(1:weightCount)
             % Find Weight deltas
+            ww = weightDeltas{lay}; % Save in variable to avoid accessing cell
+            ll = L{lay};
             for i = 1:layers(lay) 
                 for j = 1:layers(lay+1)
-                    weightDeltas{lay}(j,i) = eta * delta(j) * L{lay}(i);
+                    ww(j,i) = eta * delta(j) * ll(i);
                 end
             end
+            weightDeltas{lay} = ww;
             for j = 1:layers(lay+1)
                 B{lay}(j) = B{lay}(j) + eta * delta(j);
             end
             % Calculate all delta J for layer i
             newDeltas = zeros(1,layers(lay));
             for j = 1:layers(lay)
-                derivOutput = derivsigmoid(L{lay}(j));
+                derivOutput = derivsigmoid(ll(j));
                 total = 0;
+                currW = W{lay};
                 for k = 1:layers(lay+1)
-                    total = total + delta(k) * W{lay}(k,j);
+                    total = total + delta(k) * currW(k,j);
                 end
                 newDeltas(j) = derivOutput * total;
             end
@@ -136,7 +141,8 @@ function L = runNetwork(layers, W, B, weightCount, input)
         L{i+1} = arrayfun(@(x) sigmoid(x), A); 
     end
 
-    L{end} = softmax(W{weightCount}*L{weightCount} + 1);
+%     L{end} = softmax(W{weightCount}*L{weightCount} + 1);
+    L{end} = arrayfun(@(x) sigmoid(x), W{weightCount}*L{weightCount} + 1);
 end
 
 function accuracy = validate(layers, W, B, weightCount, inputs, targets, idxRange)
